@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RICH STORE - Pembayaran</title>
+<style>
+body {
+  margin:0; font-family:Arial,sans-serif; color:white; text-align:center;
+  height:100vh; overflow:hidden; display:flex; justify-content:center; align-items:center;
+}
+
+.animated-bg {
+  position:fixed; width:100%; height:100%;
+  background: linear-gradient(270deg, red, orange, blue, purple, white);
+  background-size:1000% 1000%;
+  animation: moveBg 20s ease infinite; z-index:-2;
+}
+
+@keyframes moveBg{0%{background-position:0% 50%;}50%{background-position:100% 50%;}100%{background-position:0% 50%;}}
+
+.container{
+  background: rgba(0,0,0,0.6);
+  border-radius:20px; padding:25px; max-width:95%;
+  box-shadow:0 0 30px rgba(255,255,255,0.3); text-align:center;
+}
+
+#main-logo {
+  width:150px;       /* diperkecil dari 250px */
+  border-radius:20px;
+  margin-bottom:15px;
+}
+
+h1{font-size:2em;margin-bottom:10px;text-shadow:0 0 20px cyan,0 0 40px magenta; animation:pulse 2s infinite alternate;}
+@keyframes pulse{from{transform:scale(1);}to{transform:scale(1.05);}}
+
+#clock,#date{font-size:1.5em;margin-bottom:10px;text-shadow:0 0 10px cyan,0 0 20px blue; transition: transform 0.2s;}
+button{
+  padding:12px 25px;border:none;border-radius:10px;font-size:1em;font-weight:bold;
+  cursor:pointer;background:#ffcc00;color:#000;transition:0.3s;margin:10px;box-shadow:0 0 10px rgba(255,255,0,0.6);
+  position: relative; overflow:hidden;
+}
+button:hover{
+  background:#ffaa00; transform: scale(1.1); box-shadow:0 0 25px yellow,0 0 50px orange;
+  animation: neon 1s infinite alternate;
+}
+@keyframes neon{
+  from{text-shadow:0 0 5px yellow;}
+  to{text-shadow:0 0 20px yellow,0 0 40px orange;}
+}
+
+.hidden{display:none;}
+.qris-img{margin-top:20px; max-width:250px; border-radius:15px; box-shadow:0 0 20px rgba(0,0,0,0.5); cursor:pointer; transition: transform 0.3s;}
+.qris-img:hover{transform: scale(1.3);}
+
+#toast{visibility:hidden; min-width:200px; background:#333; color:#fff; text-align:center; border-radius:10px; padding:10px; position:fixed; bottom:30px; left:50%; transform:translateX(-50%); z-index:10000;}
+#toast.show{visibility:visible; animation:fadein 0.5s,fadeout 0.5s 2s;}
+@keyframes fadein{from{bottom:0;opacity:0;}to{bottom:30px;opacity:1;}}
+@keyframes fadeout{from{bottom:30px;opacity:1;}to{bottom:0;opacity:0;}}
+
+#qris-modal{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.9);z-index:10000;justify-content:center;align-items:center;}
+#qris-modal img{max-width:90%;border-radius:15px;box-shadow:0 0 30px white;transition: transform 0.3s;}
+#music-btn{position:fixed;bottom:20px;left:20px;z-index:10000;background:#00e676;color:black;font-weight:bold;padding:10px 20px;border-radius:10px;box-shadow:0 0 15px rgba(0,255,100,0.8);cursor:pointer;}
+</style>
+</head>
+<body>
+<div class="animated-bg"></div>
+<div class="container">
+<img src="https://files.catbox.moe/gwr9mz.jpg" id="main-logo" alt="Logo RICH STORE">
+<div id="clock"></div>
+<div id="date"></div>
+<h1>WELCOME TO PAYMENT RICH</h1>
+<p>Silakan lakukan pembayaran.</p>
+
+<button id="pay-btn" onclick="showPayment()">💳 Bayar Sekarang</button>
+
+<div id="payment-section" class="hidden">
+<button onclick="copyText('085275308861')">📲 Salin Nomor DANA</button>
+<button onclick="copyText('083114400242')">📲 Salin Nomor Gopay</button>
+<div>
+<p>Atau scan QRIS:</p>
+<img src="https://files.catbox.moe/exampleqris.png" alt="QRIS" class="qris-img" onclick="openQris()">
+</div>
+</div>
+</div>
+
+<div id="toast"></div>
+
+<div id="qris-modal" onclick="closeQris()">
+<img src="https://files.catbox.moe/exampleqris.png" alt="QRIS Besar">
+</div>
+
+<audio id="bg-music" loop>
+<source src="https://files.catbox.moe/vafdb8.mp3" type="audio/mpeg">
+</audio>
+<button id="music-btn">▶ Putar Musik</button>
+
+<script>
+const music=document.getElementById("bg-music");
+const musicBtn=document.getElementById("music-btn");
+let playing=false;
+musicBtn.addEventListener("click",()=>{
+if(!playing){music.play();musicBtn.textContent="⏸ Hentikan Musik";playing=true;}
+else{music.pause();musicBtn.textContent="▶ Putar Musik";playing=false;}
+});
+
+// Jam & tanggal dengan animasi detik
+function updateClock(){
+  const now=new Date();
+  let h=now.getHours().toString().padStart(2,'0');
+  let m=now.getMinutes().toString().padStart(2,'0');
+  let s=now.getSeconds().toString().padStart(2,'0');
+  let day=now.toLocaleDateString('id-ID',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+  document.getElementById("clock").innerText=`${h}:${m}:${s}`;
+  document.getElementById("clock").style.transform=`scale(${1+0.05*(s%2)})`;
+  document.getElementById("date").innerText=day;
+}
+setInterval(updateClock,1000);
+updateClock();
+
+// Tombol bayar
+function showPayment(){
+document.getElementById("pay-btn").classList.add("hidden");
+document.getElementById("payment-section").classList.remove("hidden");
+playClick();
+}
+
+// Copy nomor
+function copyText(text){
+navigator.clipboard.writeText(text).then(()=>{
+showToast("Nomor "+text+" berhasil disalin!");
+playTing();
+});
+}
+
+// Toast
+function showToast(msg){
+const toast=document.getElementById("toast");
+toast.innerText=msg;
+toast.className="show";
+setTimeout(()=>{toast.className=toast.className.replace("show","");},2500);
+}
+
+// QRIS modal
+function openQris(){document.getElementById("qris-modal").style.display="flex";}
+function closeQris(){document.getElementById("qris-modal").style.display="none";}
+
+// Suara klik & ting
+const audioCtx=new (window.AudioContext||window.webkitAudioContext)();
+function playClick(){const osc=audioCtx.createOscillator();const gain=audioCtx.createGain();osc.type="square";osc.frequency.value=300;gain.gain.value=0.05;osc.connect(gain).connect(audioCtx.destination);osc.start();osc.stop(audioCtx.currentTime+0.1);}
+function playTing(){const osc=audioCtx.createOscillator();const gain=audioCtx.createGain();osc.type="sine";osc.frequency.value=800;gain.gain.value=0.1;osc.connect(gain).connect(audioCtx.destination);osc.start();osc.stop(audioCtx.currentTime+0.2);}
+</script>
+</body>
+</html>
